@@ -460,8 +460,12 @@ module Pod
         :accept_encoding => 'gzip',
         :netrc => :optional,
         :netrc_file => Netrc.default_path,
-        :headers => etag.nil? ? {} : { 'If-None-Match' => etag },
+        :headers => etag.nil? ? {} : { 'If-None-Match' => etag }
       )
+
+      host=URI.parse(file_remote_url).host
+      credentials_key="COCOAPODS_CDN_#{host.upcase.gsub(".", "__")}"
+      request.options[:userpwd] = ENV[credentials_key] if ENV.fetch(credentials_key, "").include?(":")
 
       future = Promises.resolvable_future_on(HYDRA_EXECUTOR)
       queue_request(request)

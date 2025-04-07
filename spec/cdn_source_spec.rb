@@ -42,6 +42,7 @@ module Pod
         Pathname.glob(@path.join('*')).each(&:rmtree)
         @path.join('.url').delete if @path.join('.url').exist?
         ENV['NETRC'] = nil
+        ENV['COCOAPODS_CDN_LOCALHOST'] = nil
       end
 
       def print_dir(tag)
@@ -168,6 +169,37 @@ module Pod
         end
         @source.versions('Unknown_Pod').should.be.nil
         auth.should == 'Basic dXNlcjE6eHh4'
+      end
+
+      it 'uses environment variable credentials when provided' do
+        save_url('http://localhost:4321/authorization')
+        @source = CDNSource.new(@path)
+        ENV['COCOAPODS_CDN_LOCALHOST'] = "user1:xxx"
+        auth = nil
+        CDN_MOCK_SERVER.mount_proc('/authorization') do |req, res|
+          auth = req['Authorization']
+          res.body = ''
+        end
+        @source.versions('Unknown_Pod').should.be.nil
+        auth.should == 'Basic dXNlcjE6eHh4'
+      end
+
+      it 'favors environment variable credentials over netrc when both provided' do
+        save_url('http://localhost:4321/authorization')
+        @source = CDNSource.new(@path)
+
+        netrc_file = temporary_directory + '.netrc'
+        File.open(netrc_file, 'w') { |f| f.write("machine localhost\nlogin user1\npassword xxx\n") }
+
+        ENV['NETRC'] = temporary_directory.to_s
+        ENV['COCOAPODS_CDN_LOCALHOST'] = "user2:yyy"
+        auth = nil
+        CDN_MOCK_SERVER.mount_proc('/authorization') do |req, res|
+          auth = req['Authorization']
+          res.body = ''
+        end
+        @source.versions('Unknown_Pod').should.be.nil
+        auth.should == 'Basic dXNlcjI6eXl5'
       end
 
       it 'handles redirects' do
