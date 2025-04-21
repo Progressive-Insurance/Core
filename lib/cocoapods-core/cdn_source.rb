@@ -3,6 +3,7 @@ require 'rest'
 require 'concurrent'
 require 'netrc'
 require 'addressable'
+require 'base64'
 
 module Pod
   # Subclass of Pod::Source to provide support for CDN-based Specs repositories
@@ -170,6 +171,20 @@ module Pod
       relative_podspec = relative_pod_path(name).join(podspec_version_path_relative).to_s
       download_file(relative_podspec)
       pod_path(name).join(podspec_version_path_relative)
+    end
+
+    # @return [Specification] the specification for a given version of Pod.
+    #
+    # @param  @see specification_path
+    #
+    def specification(name, version)
+      spec = super(name, version)
+      if spec.source[:http]
+        host=URI.parse(spec.source[:http]).host
+        credentials=ENV["COCOAPODS_CDN_#{host.upcase.gsub(".", "__")}"]
+        spec.attributes_hash["source"]["headers"] = ["Authorization: Basic #{Base64.strict_encode64(credentials)}"] if credentials
+      end
+      spec
     end
 
     # @return [Array<Specification>] all the specifications contained by the
@@ -462,6 +477,10 @@ module Pod
         :netrc_file => Netrc.default_path,
         :headers => etag.nil? ? {} : { 'If-None-Match' => etag },
       )
+
+      host = URI.parse(file_remote_url).host
+      credentials = ENV["COCOAPODS_CDN_#{host.upcase.gsub(".", "__")}"]
+      request.options[:userpwd] = credentials unless credentials.nil?
 
       future = Promises.resolvable_future_on(HYDRA_EXECUTOR)
       queue_request(request)
