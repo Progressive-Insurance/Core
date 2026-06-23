@@ -39,7 +39,7 @@ GEM
     benchmark (0.3.0)
     bigdecimal (3.1.8)
     coderay (1.1.3)
-    concurrent-ruby (1.3.4)
+    concurrent-ruby (1.3.7)
     connection_pool (2.4.1)
     crack (0.4.5)
       rexml
@@ -128,7 +128,7 @@ PLATFORMS
 
 DEPENDENCIES
   awesome_print
-  bacon
+  bacon (~> 1.1, >= 0)
   cocoapods-core!
   kicker
   mocha (< 1.5)
