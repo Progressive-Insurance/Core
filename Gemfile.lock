@@ -134,7 +134,7 @@ PLATFORMS
 
 DEPENDENCIES
   awesome_print
-  bacon
+  bacon (~> 1.1, >= 0)
   cocoapods-core!
   kicker
   mocha (< 1.5)
